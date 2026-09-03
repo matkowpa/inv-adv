@@ -29,6 +29,7 @@ Faza planowania — wyjściowy opis pomysłu: [TODOs.txt](TODOs.txt).
 
 Wyniki: `reports/decisions/*.md` (audyt) i `reports/history.csv` (buduje serię pod metryki w F1).
 Metryki F1 (Sharpe/drawdown/vol vs S&P 500) w protokole od 3 punktów historii; podgląd: `python -m inv_adv.metrics`.
+Historyczne metryki przy statycznym składzie (rekonstrukcja z notowań Yahoo): `python -m inv_adv.history_rebuild --period 1y` → `reports/history_rebuilt.csv`.
 
 ## Import portfela z IBKR
 
