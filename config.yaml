@@ -1,0 +1,18 @@
+# inv-adv — konfiguracja F0 (edytuj wg własnej strategii)
+
+base_currency: PLN
+
+benchmark:
+  ticker: ^GSPC          # S&P 500 (decyzja D1)
+  currency: USD          # waluta kwotowania benchmarku (konwertowana na base_currency)
+
+drift_threshold_pp: 5.0    # R1: twardy próg dryfu w p.p. — transakcja do targetu
+max_turnover_pct: 20.0     # R2: limit obrotu na cykl (% wartości portfela)
+transaction_cost_pct: 0.2  # założenie kosztu transakcyjnego (%) — estymata w protokole
+
+# targety alokacji — EDYTUJ (decyzja D1: 100% akcje + krypto).
+# Klasy muszą sumować się do 1.0 i odpowiadać kolumnie asset_class w data/portfolio.csv.
+targets:
+  equity_global: 0.50
+  equity_us: 0.30
+  crypto: 0.20

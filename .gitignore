@@ -7,3 +7,7 @@ Desktop.ini
 __pycache__/
 *.pyc
 .venv/
+
+# F0
+.pytest_cache/
+data/prices/

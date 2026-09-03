@@ -19,3 +19,13 @@ Decyzje podejmuje komitet złożony z agentów, m.in.: dyrektora inwestycyjnego,
 ## Status
 
 Faza planowania — wyjściowy opis pomysłu: [TODOs.txt](TODOs.txt).
+
+## Uruchomienie (F0 — MVP rdzenia)
+
+1. `pip install -r requirements.txt`
+2. Uzupełnij `data/portfolio.csv` (wzór: [data/portfolio.example.csv](data/portfolio.example.csv)) i targety w `config.yaml` (decyzja D1).
+3. `python run.py` — pobiera ceny z Yahoo (akcje/ETF/krypto + FX), generuje protokół decyzji i dopisuje wiersz do historii.
+   `python run.py --offline` — używa cache z `data/prices/` (bez sieci, reprodukowalnie).
+
+Wyniki: `reports/decisions/*.md` (audyt) i `reports/history.csv` (buduje serię pod metryki w F1).
+Plan przedsięwzięcia: [docs/plan-inv-adv.md](docs/plan-inv-adv.md).

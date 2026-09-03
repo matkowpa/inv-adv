@@ -1,0 +1,4 @@
+ticker,quantity,asset_class,currency
+VWCE.DE,10,equity_global,EUR
+SPY,5,equity_us,USD
+BTC-USD,0.05,crypto,USD
