@@ -9,6 +9,7 @@ benchmark:
 drift_threshold_pp: 5.0    # R1: twardy próg dryfu w p.p. — transakcja do targetu
 max_turnover_pct: 20.0     # R2: limit obrotu na cykl (% wartości portfela)
 transaction_cost_pct: 0.2  # założenie kosztu transakcyjnego (%) — estymata w protokole
+risk_free_annual: 0.0      # stopa wolna od ryzyka do Sharpe (porównanie D1 jest względne)
 
 # targety alokacji — EDYTUJ (decyzja D1: 100% akcje + krypto; klasy wg realnego portfela IBKR).
 # Klasy muszą sumować się do 1.0 i odpowiadać kolumnie asset_class w data/portfolio.csv

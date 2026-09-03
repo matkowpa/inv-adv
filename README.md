@@ -28,6 +28,7 @@ Faza planowania — wyjściowy opis pomysłu: [TODOs.txt](TODOs.txt).
    `python run.py --offline` — używa cache z `data/prices/` (bez sieci, reprodukowalnie).
 
 Wyniki: `reports/decisions/*.md` (audyt) i `reports/history.csv` (buduje serię pod metryki w F1).
+Metryki F1 (Sharpe/drawdown/vol vs S&P 500) w protokole od 3 punktów historii; podgląd: `python -m inv_adv.metrics`.
 
 ## Import portfela z IBKR
 
