@@ -6,10 +6,10 @@
 
 | # | Decyzja | Status | Blokuje |
 |---|---|---|---|
-| D1 | Próg porażki projektu | OTWARTE | kryterium zamknięcia F1 |
-| D2 | Portfel i budżet (dane + LLM) | OTWARTE | gate G3 (ekonomika) |
-| D3 | Obszar dyskrecjonalny | OTWARTE | projekt modułu M2 |
-| D4 | Źródło danych rynkowych | OTWARTE | implementację M1 (F0) |
+| D1 | Próg porażki projektu | ZAMKNIĘTE | kryterium zamknięcia F1 |
+| D2 | Portfel i budżet (dane + LLM) | ZAMKNIĘTE | gate G3 (ekonomika) |
+| D3 | Obszar dyskrecjonalny | ZAMKNIĘTE | projekt modułu M2 |
+| D4 | Źródło danych rynkowych | ZAMKNIĘTE | implementację M1 (F0) |
 
 ## D1. Próg porażki projektu
 
@@ -20,10 +20,12 @@ system może trwać w nieskończoność (ryzyko nr 6 w planie).
 
 **Wpływa na:** kryterium zamknięcia fazy F1, ocenę sensu dalszych inwestycji w projekt.
 
-**Status:** OTWARTE
+**Status:** ZAMKNIĘTE
 
 **Odpowiedź:**
-(tu wpisz, np. „jeśli po 12 mies. paper tradingu Sharpe < Sharpe 60/40 → projekt zamykam")
+Zakładam 100% inwestycje w akcje i aktywa ryzykowne (krypto), zatem punktem odniesienia
+powinien być szeroki indeks płynnego rynku, np. S&P 500. Jeśli po 12 mies. paper tradingu
+Sharpe projektu < Sharpe S&P 500 — projekt zamykam.
 
 ## D2. Wielkość portfela i budżet na dane + LLM
 
@@ -36,25 +38,27 @@ system może trwać w nieskończoność (ryzyko nr 6 w planie).
 koszt LLM rocznie. Próg sensu = 0,3–0,5% wartości portfela (np. portfel 100 tys. PLN
 → budżet ok. 300–500 PLN/rok).
 
-**Status:** OTWARTE
+**Status:** ZAMKNIĘTE
 
 **Odpowiedź:**
-(tu wpisz trzy liczby)
+Portfel: 1 000 000; budżet: dane 1 000/rok, LLM 1 000/rok (łącznie 2 000/rok).
+
+**Wynik gate'a G3:** 2 000 / 1 000 000 = 0,2% < 0,3–0,5% → **PRZEJŚCIE**
+(założenie: wszystkie trzy liczby w tej samej walucie). 
 
 ## D3. Obszar dyskrecjonalny
 
-**Pytanie:** czy dopuszczasz wyjątki od twardych reguł rebalancingu? Jeśli tak — jak
-wąsko je definiujesz (kto, kiedy, jaka granica odchylenia)?
+**Pytanie:** czy dopuszczasz wyjątki od twardych reguł rebalancingu? Jeśli tak — jak wąsko je definiujesz (kto, kiedy, jaka granica odchylenia)?
 
 **Dlaczego:** rada ostrzegła, że furtki typu „chyba że przekroczone progi ryzyka"
 unieważniają rygor systemu (ryzyko nr 3 w planie).
 
 **Wpływa na:** projekt modułu M2 (silnik rebalancingu) — im węższa definicja, tym prostsza logika.
 
-**Status:** OTWARTE
+**Status:** ZAMKNIĘTE
 
 **Odpowiedź:**
-(tu wpisz TAK/NIE + definicję, np. „NIE — system zawsze wykonuje regułę; wyjątek tylko ręcznie, z wpisem w logu")
+NIE — system zawsze wykonuje regułę; wyjątek tylko ręcznie, z wpisem w logu.
 
 ## D4. Źródło danych rynkowych
 
@@ -65,7 +69,7 @@ własne pliki CSV/Excel / inne (wpisz).
 
 **Wpływa na:** implementację M1 (pierwsza rzecz budowana w F0).
 
-**Status:** OTWARTE
+**Status:** ZAMKNIĘTE
 
 **Odpowiedź:**
-(tu wpisz, np. „wyceny własne z CSV + benchmark z Stooq")
+Benchmarki i dane ze źródeł publicznych (np. Stooq, Yahoo i inne) lub API brokera, np. XTB.
