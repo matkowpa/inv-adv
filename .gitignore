@@ -11,3 +11,7 @@ __pycache__/
 # F0
 .pytest_cache/
 data/prices/
+
+# dane pozycyjne (prywatne — tylko lokalnie; regeneracja: import IBKR)
+data/portfel_*.xlsx
+data/portfolio.csv
