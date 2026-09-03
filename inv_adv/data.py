@@ -10,6 +10,7 @@ import yaml
 CONFIG_PATH = Path("config.yaml")
 PORTFOLIO_PATH = Path("data/portfolio.csv")
 PRICE_CACHE = Path("data/prices/latest.csv")
+MANUAL_PRICES = Path("data/prices_manual.csv")
 
 REQUIRED_COLUMNS = ["ticker", "quantity", "asset_class", "currency"]
 
@@ -74,13 +75,36 @@ def collect_tickers(portfolio: pd.DataFrame, cfg: dict) -> list[str]:
     return sorted(tickers)
 
 
-def fetch_prices(tickers: list[str], offline: bool = False,
-                 cache: Path = PRICE_CACHE) -> pd.DataFrame:
+def apply_manual_overrides(prices: pd.DataFrame,
+                           manual: Path = MANUAL_PRICES) -> tuple[pd.DataFrame, list[str]]:
+    """Nadpisuje cenę tickerów z opcjonalnego pliku ręcznego (ticker,price).
+
+    Dla pozycji, gdzie Yahoo bywa nieaktualne (np. ETF-y z GPW). Cache zostaje
+    nietknięty — nadpisanie działa również w trybie offline. Zwraca (df, nadpisane).
+    """
+    if not manual.exists():
+        return prices, []
+    man = pd.read_csv(manual)
+    if not {"ticker", "price"} <= set(man.columns):
+        raise ValueError(f"{manual}: wymagane kolumny ticker, price")
+    prices = prices.copy()
+    touched: list[str] = []
+    for _, r in man.iterrows():
+        mask = prices["ticker"].astype(str) == str(r["ticker"])
+        if mask.any():
+            prices.loc[mask, "price"] = float(r["price"])
+            touched.append(str(r["ticker"]))
+    return prices, touched
+
+
+def fetch_prices(tickers: list[str], offline: bool = False, cache: Path = PRICE_CACHE,
+                 manual: Path = MANUAL_PRICES) -> tuple[pd.DataFrame, list[str]]:
     """Ceny (ostatnie zamknięcie) dla tickerów Yahoo.
 
-    Zwraca DataFrame: ticker, price, fetched_at (UTC). Tryb online zapisuje cache
-    (podstawa trybu offline i reprodukowalności protokołów); offline czyta cache
-    i zgłasza błąd, gdy brakuje tickera.
+    Zwraca (DataFrame: ticker, price, fetched_at; lista tickerów z ręcznym
+    nadpisaniem ceny). Tryb online zapisuje cache (podstawa trybu offline
+    i reprodukowalności protokołów); offline czyta cache i zgłasza błąd,
+    gdy brakuje tickera.
     """
     if offline:
         if not cache.exists():
@@ -89,7 +113,8 @@ def fetch_prices(tickers: list[str], offline: bool = False,
         missing = sorted(set(tickers) - set(df["ticker"]))
         if missing:
             raise ValueError(f"brak cen w cache dla: {missing}")
-        return df[df["ticker"].isin(tickers)].reset_index(drop=True)
+        df = df[df["ticker"].isin(tickers)].reset_index(drop=True)
+        return apply_manual_overrides(df, manual)
 
     import yfinance as yf  # import leniwy — testy nie potrzebują sieci
 
@@ -111,4 +136,4 @@ def fetch_prices(tickers: list[str], offline: bool = False,
     df = pd.DataFrame(rows)
     cache.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(cache, index=False)
-    return df
+    return apply_manual_overrides(df, manual)

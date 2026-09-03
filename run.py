@@ -25,9 +25,13 @@ def main(argv: list[str] | None = None) -> None:
 
     cfg = load_config(Path(args.config))
     portfolio = load_portfolio(Path(args.portfolio))
-    prices = fetch_prices(collect_tickers(portfolio, cfg), offline=args.offline)
+    prices, manual_overrides = fetch_prices(collect_tickers(portfolio, cfg),
+                                            offline=args.offline)
     prices_meta = ("cache data/prices/latest.csv (offline)" if args.offline
                    else "Yahoo Finance (online; zapis do cache data/prices/latest.csv)")
+    if manual_overrides:
+        prices_meta += ("; ceny ręczne (data/prices_manual.csv): "
+                        + ", ".join(manual_overrides))
 
     snapshot = build_snapshot(portfolio, prices, cfg)
     trades, fired = propose_trades(

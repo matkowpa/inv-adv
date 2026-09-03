@@ -1,0 +1,17 @@
+# Mapowanie pozycji z eksportu IBKR na tickery Yahoo i klasy aktywów.
+# Klucz: "<Symbol IBKR>|<Waluta IBKR>" (waluta wg linii notowań w eksporcie).
+# asset_class musi istnieć w sekcji targets w config.yaml.
+"2B70|EUR":      {yahoo: 2B70.DE,      asset_class: equity_us}
+"BCFP|EUR":      {yahoo: BCFP.DE,      asset_class: equity_us}
+"BITC|EUR":      {yahoo: BITC.AS,      asset_class: crypto}
+"EMQQ|EUR":      {yahoo: EMQQ.DE,      asset_class: equity_em}
+"EMQQ|USD":      {yahoo: EMQQ.L,       asset_class: equity_em}
+"HX60|EUR":      {yahoo: HX60.DE,      asset_class: equity_us}
+"RBOT|EUR":      {yahoo: RBOT.MI,      asset_class: equity_thematic}
+"SXR8|EUR":      {yahoo: SXR8.DE,      asset_class: equity_us}
+"VUAA|EUR":      {yahoo: VUAA.DE,      asset_class: equity_us}
+"ETHWEUR|EUR":   {yahoo: WETH.PA,      asset_class: crypto}
+"ZPDF|EUR":      {yahoo: ZPDF.DE,      asset_class: equity_us}
+"ETFBM40TR|PLN": {yahoo: ETFBM40TR.WA, asset_class: equity_pl}
+"INTRUM|SEK":    {yahoo: INTRUM.ST,    asset_class: equity_single}
+"IUCD|USD":      {yahoo: IUCD.L,       asset_class: equity_us}

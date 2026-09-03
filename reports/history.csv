@@ -1,3 +1,2 @@
-date,total_value,benchmark_value,share_equity_global,share_equity_us,share_crypto
-2026-09-04T00:29:22,36645.083218515516,28783.517663051607,0.196649,0.391922,0.411429
-2026-09-04T00:29:23,36645.083218515516,28783.517663051607,0.196649,0.391922,0.411429
+date,total_value,benchmark_value,share_equity_us,share_equity_pl,share_equity_thematic,share_equity_em,share_equity_single,share_crypto
+2026-09-04T01:32:24,1410996.555866302,28788.32037785207,0.573303,0.149413,0.103801,0.079931,0.009646,0.083905

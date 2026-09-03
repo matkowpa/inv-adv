@@ -10,9 +10,13 @@ drift_threshold_pp: 5.0    # R1: twardy próg dryfu w p.p. — transakcja do tar
 max_turnover_pct: 20.0     # R2: limit obrotu na cykl (% wartości portfela)
 transaction_cost_pct: 0.2  # założenie kosztu transakcyjnego (%) — estymata w protokole
 
-# targety alokacji — EDYTUJ (decyzja D1: 100% akcje + krypto).
-# Klasy muszą sumować się do 1.0 i odpowiadać kolumnie asset_class w data/portfolio.csv.
+# targety alokacji — EDYTUJ (decyzja D1: 100% akcje + krypto; klasy wg realnego portfela IBKR).
+# Klasy muszą sumować się do 1.0 i odpowiadać kolumnie asset_class w data/portfolio.csv
+# (przypisania: data/ibkr_mapping.yaml).
 targets:
-  equity_global: 0.50
-  equity_us: 0.30
-  crypto: 0.20
+  equity_us: 0.55        # SXR8, VUAA, BCFP, HX60, ZPDF, 2B70, IUCD
+  equity_pl: 0.15        # Beta ETF mWIG40TR
+  equity_thematic: 0.10  # RBOT (automatyka/robotyka)
+  equity_em: 0.08        # EMQQ (internet/e-commerce EM)
+  equity_single: 0.02    # INTRUM (pojedyncza akcja)
+  crypto: 0.10           # BITC + WisdomTree Ethereum

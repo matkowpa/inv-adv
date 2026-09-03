@@ -28,4 +28,14 @@ Faza planowania — wyjściowy opis pomysłu: [TODOs.txt](TODOs.txt).
    `python run.py --offline` — używa cache z `data/prices/` (bez sieci, reprodukowalnie).
 
 Wyniki: `reports/decisions/*.md` (audyt) i `reports/history.csv` (buduje serię pod metryki w F1).
+
+## Import portfela z IBKR
+
+1. Eksport pozycji z IBKR (.xlsx) zapisz w `data/` (kolumny: Currency, Symbol, Description, Quantity, ...).
+2. Mapowanie pozycji: `data/ibkr_mapping.yaml` (klucz `Symbol|Waluta` → ticker Yahoo + klasa aktywa).
+3. `python -m inv_adv.import_ibkr data/portfel_2026.09.01.xlsx` — pisze `data/portfolio.csv`.
+4. `python run.py` — protokół na realnych danych.
+
+Pozycje ze słabymi danymi Yahoo (np. ETF-y z GPW): ręczna cena w `data/prices_manual.csv`
+(kolumny `ticker,price`) — nadpisuje Yahoo również w trybie offline (odnotowane w protokole).
 Plan przedsięwzięcia: [docs/plan-inv-adv.md](docs/plan-inv-adv.md).
