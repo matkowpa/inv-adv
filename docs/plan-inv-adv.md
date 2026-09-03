@@ -90,6 +90,8 @@ Werdykt PIVOT wymusza dwuwarstwowy model:
 
 ## 7. Pytania otwarte (decyzje właściciela przed F0)
 
+> Odpowiedzi spisuj w [decyzje.md](decyzje.md) — po uzupełnieniu zostaną przeniesione tutaj jako podjęte decyzje.
+
 1. Próg porażki: jaka metryka/benchmark/okres kończy pracę nad projektem?
 2. Wielkość portfela i budżet na dane/LLM — dane wejściowe do G3.
 3. Czy w ogóle dopuszczamy „obszar dyskrecjonalny”? Jeśli tak — operacyjny podział progi twarde vs dyskrecja (debata nie dopracowała podziału).
