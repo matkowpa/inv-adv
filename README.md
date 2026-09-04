@@ -48,6 +48,7 @@ pip install -r requirements.txt   # Python 3.12
 | `python -m inv_adv.metrics` | metryki z historii biegów (od 3 punktów) |
 | `python -m inv_adv.history_rebuild --period 1y` | historyczne metryki (statyczny skład) → `reports/history_rebuilt.csv` |
 | `python -m inv_adv.publish` | lokalny dashboard → `site/index.html` (pełne dane, nie publikować) |
+| `python scripts/whatif_targets.py` | analiza what-if wariantów targetów D5 (offline, silnik M2) |
 | `python -m pytest` | testy jednostkowe (34, offline) |
 
 ## Konfiguracja
@@ -75,6 +76,7 @@ pip install -r requirements.txt   # Python 3.12
 - [docs/plan-inv-adv.md](docs/plan-inv-adv.md) — plan przedsięwzięcia + podjęte decyzje D1–D4
 - [docs/concept-boardroom.md](docs/concept-boardroom.md) — koncepcja z debaty rady (werdykt PIVOT, ryzyka, gate'e)
 - [docs/g1-wynik.md](docs/g1-wynik.md) — wynik gate'a G1 (test komitetu agentów): FAIL, M4 zawieszony, decyzja D6
+- [docs/what-if-targets.md](docs/what-if-targets.md) — analiza what-if wariantów targetów (wsparcie decyzji D5)
 - [docs/decyzje.md](docs/decyzje.md) — rejestr decyzji właściciela
 - Wyjściowy opis pomysłu: [TODOs.txt](TODOs.txt)
 
