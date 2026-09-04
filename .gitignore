@@ -15,3 +15,6 @@ data/prices/
 # dane pozycyjne (prywatne — tylko lokalnie; regeneracja: import IBKR)
 data/portfel_*.xlsx
 data/portfolio.csv
+
+# dashboard lokalny (pełne dane — nie publikować)
+site/
