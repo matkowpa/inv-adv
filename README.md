@@ -7,8 +7,8 @@ System wspierania decyzji inwestycyjnych: **twardy rdzeń rebalancingu** (reguł
 | Faza | Zakres | Status |
 |---|---|---|
 | **F0 — rdzeń MVP** | przegląd portfela (M1), silnik rebalancingu (M2), protokół decyzji (M3) | ✅ ukończona — działa na realnym portfelu z IBKR |
-| **F1 — metryki i paper trading** | Sharpe/vol/drawdown vs benchmarki (S&P 500, Nasdaq-100), historia biegów (→ G4) | 🔄 metryki gotowe; historia się buduje |
-| **F2 — eksperymenty LLM** | M4 komitet agentów (gate G1), M5 sentyment (gate G2) | ⬜ za gate'ami walidacyjnymi |
+| **F1 — metryki i paper trading** | Sharpe/vol/drawdown vs benchmarki (S&P 500, Nasdaq-100), historia biegów (→ G4) | 🔄 metryki gotowe; historia rośnie automatycznie (bieg tygodniowy) |
+| **F2 — eksperymenty LLM** | M4 komitet agentów (gate G1), M5 sentyment (gate G2) | 🔄 G1 wykonany → **FAIL**: M4 zawieszony (decyzja D6); G2 niewykonane |
 | **F3 — skalowanie** | B2C / white-label | ⛔ zamrożona (analiza regulacyjna KNF/MiFID) |
 
 Werdykt debaty rady modeli (Boardroom/idea-orch): **PIVOT** — rdzeń reguł budujemy od razu, warstwa LLM dopiero po walidacji. Pełna koncepcja: [docs/concept-boardroom.md](docs/concept-boardroom.md).
@@ -60,7 +60,7 @@ pip install -r requirements.txt   # Python 3.12
 ## Cykl pracy
 
 1. **Miesięcznie**: nowy eksport IBKR → `python -m inv_adv.import_ibkr <plik>` → `python run.py`
-2. **Tygodniowo** (docelowo automat): `python run.py` — buduje historię pod metryki i gate G4
+2. **Tygodniowo — automat**: zadanie Harmonogramu Windows `inv-adv-weekly` (sobota 10:00; `scripts/weekly_run.ps1`; StartWhenAvailable — nadrabia po wyłączeniu komputera; log `reports/logs/`): `run.py` + dashboard; przy błędzie punkt historii NIE jest dopisywany
 3. Decyzje wg protokołu; egzekucja zawsze ręczna (jednomyślna decyzja rady)
 
 ## Artefakty
@@ -74,6 +74,7 @@ pip install -r requirements.txt   # Python 3.12
 
 - [docs/plan-inv-adv.md](docs/plan-inv-adv.md) — plan przedsięwzięcia + podjęte decyzje D1–D4
 - [docs/concept-boardroom.md](docs/concept-boardroom.md) — koncepcja z debaty rady (werdykt PIVOT, ryzyka, gate'e)
+- [docs/g1-wynik.md](docs/g1-wynik.md) — wynik gate'a G1 (test komitetu agentów): FAIL, M4 zawieszony, decyzja D6
 - [docs/decyzje.md](docs/decyzje.md) — rejestr decyzji właściciela
 - Wyjściowy opis pomysłu: [TODOs.txt](TODOs.txt)
 

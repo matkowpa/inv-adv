@@ -51,7 +51,7 @@ Werdykt PIVOT wymusza dwuwarstwowy model:
 
 | # | Gate | Kryterium przejścia |
 |---|---|---|
-| G1 | Test rozbieżności komitetu | ≥30% różnicy rekomendacji agentów na identycznych danych; porażka = M4 trwale skasowany |
+| G1 | Test rozbieżności komitetu | ≥30% różnicy rekomendacji agentów na identycznych danych; porażka = M4 trwale skasowany — **WYKONANY 2026-09-04: FAIL** (0/3 agentów podało liczby; próg 30 p.p. sfalsyfikowany — Goodhart) → **M4 zawieszony**, decyzja **D6**: [g1-wynik.md](g1-wynik.md) |
 | G2 | Backtest sentymentu | wykazana moc predykcyjna; porażka = zero linii kodu M5 |
 | G3 | Rachunek kosztów | koszty danych+LLM < 0,3–0,5% wartości portfela rocznie — **PRZEJŚCIE (D2)**: 2 000/rok = 0,2% z 1 000 000; sporządzony PRZED dalszym developmentem |
 | G4 | Paper trading | 6–12 mies. bezbłędnego działania przed jakąkolwiek automatyzacją egzekucji |
@@ -62,6 +62,7 @@ Werdykt PIVOT wymusza dwuwarstwowy model:
   w rundach dyskusji (runda 1: opinie niezależne — anti-groupthink; runda 2: agenci widzą
   opinie pozostałych); zróżnicowane modele LLM per rola. Wzorzec i gotowy kod: repo `idea-orch`
   (LiteLLM + OpenRouter, pliki markdown jako szyna komunikacji, syntezy moderatora, protokół debaty).
+  **Status po G1 (2026-09-04): zawieszony** — [g1-wynik.md](g1-wynik.md), decyzja D6.
 - **M5 Sentyment rynkowy** — indeksy sentymentu jako filtr tempa działań; implementacja wyłącznie po G2.
 
 ## 4. Stack i dane

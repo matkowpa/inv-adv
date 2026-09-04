@@ -10,6 +10,7 @@
 | D2 | Portfel i budżet (dane + LLM) | ZAMKNIĘTE | gate G3 (ekonomika) |
 | D3 | Obszar dyskrecjonalny | ZAMKNIĘTE | projekt modułu M2 |
 | D4 | Źródło danych rynkowych | ZAMKNIĘTE | implementację M1 (F0) |
+| D6 | Los warstwy LLM (M4) po G1 | OTWARTE | fazę F2: zamknięcie M4 lub kalibrację i re-test |
 
 ## D1. Próg porażki projektu
 
@@ -73,3 +74,24 @@ własne pliki CSV/Excel / inne (wpisz).
 
 **Odpowiedź:**
 Benchmarki i dane ze źródeł publicznych (np. Stooq, Yahoo i inne) lub API brokera, np. XTB.
+
+## D6. Los warstwy LLM (M4) po wyniku gate'a G1
+
+**Pytanie:** G1 zakończył się porażką formalną (0/3 agentów podało liczbowe rekomendacje
+targetów), a próg 30 p.p. został sfalsyfikowany podczas samej debaty (Goodhart — patrz
+[g1-wynik.md](g1-wynik.md)). Co dalej z modułem M4 (komitet agentów)?
+
+**Opcje:**
+- **(a) Trwałe zamknięcie M4** — komitet wypada z planu zgodnie z pierwotną definicją
+  porażki gate'a; warstwa LLM nie powstaje (pozostaje rdzeń + kwestia G2/M5).
+- **(b) Kalibracja zerokosztowa + re-test G1** — wykonanie 5 kroków z werdyktu sędziego
+  (baseline niedeterminizmu, symulacja 20 par wektorów, prompty bez tabeli Sharpe,
+  rozdzielenie oceny D1 od komitetu, liczbowy protokół furtki), potem skalibrowany
+  re-test; jeśli ponownie padnie — zamknięcie bez dalszych debat.
+
+**Wpływa na:** fazę F2 i przyszłość modułu M4.
+
+**Status:** OTWARTE
+
+**Odpowiedź:**
+(tu wpisz decyzję — a lub b)
