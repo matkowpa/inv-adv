@@ -5,6 +5,15 @@
 > Parametry: próg R1 = 5 p.p., limit obrotu R2 = 20%, koszt transakcyjny 0,2%.
 > Analiza nie zmienia `config.yaml` ani mappingu — to materiał decyzyjny.
 
+> **AKTUALIZACJA 2026-09-04, popołudnie:** właściciel zlikwidował pozycję ETH
+> (WETH.PA, 615 jedn.; akcja ręczna — wpis audytowy per D3). Portfel: **13 pozycji,
+> 1 370 079 PLN**; krypto = tylko BITC.AS (4,7%). Liczby w tabelach poniżej są
+> **historyczne** (stan poranny). Skutki dla wariantów: **W0** — R1 już odpala
+> (krypto −5,3 p.p. → propozycja BUY BITC.AS 72 787 PLN do targetu 10%, protokół
+> `2026-09-04-140402`); **W2** (krypto 3%) — wróciłoby w pasmo (+1,7 p.p., 0 transakcji).
+> Decyzja D5 zyskuje na wadze: utrzymanie targetu krypto 10% oznacza dziś
+> **podwojenie ekspozycji BTC** — a decyzja o tym należy do właściciela (egzekucja ręczna).
+
 ## Motywacja (skąd ta decyzja)
 
 Obecny skład w ostatnich ~8 miesiącach: **−1,1% / Sharpe −0,09 / maxDD −13,2%**
