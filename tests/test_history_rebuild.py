@@ -78,6 +78,29 @@ def test_build_series_sek_via_cross():
     assert series["benchmark_value"].tolist() == pytest.approx([20000.0, 20000.0, 20000.0])
 
 
+CFG2 = {
+    "base_currency": "PLN",
+    "targets": {"equity_us": 1.0},
+    "benchmarks": {
+        "spx": {"name": "S&P 500 (PLN)", "ticker": "^GSPC", "currency": "USD"},
+        "nasdaq": {"name": "Nasdaq-100 (PLN)", "ticker": "^NDX", "currency": "USD"},
+    },
+}
+
+
+def test_build_series_multi_benchmark():
+    close = make_close()
+    close["^NDX"] = [20000.0, 21000.0, 19800.0, 20200.0]
+    series = build_series(PORTFOLIO, close, CFG2)
+    # główny benchmark -> legacy kolumna benchmark_value; nasdaq -> własna kolumna
+    assert list(series.columns) == ["date", "total_value",
+                                    "benchmark_value", "benchmark_nasdaq_value"]
+    assert series["benchmark_value"].tolist() == pytest.approx(
+        [20000.0, 20400.0, 19800.0, 20080.0])
+    assert series["benchmark_nasdaq_value"].tolist() == pytest.approx(
+        [80000.0, 84000.0, 79200.0, 80800.0])
+
+
 def test_rebuilt_series_feeds_metrics():
     from inv_adv.metrics import compute_metrics
     series = build_series(PORTFOLIO, make_close(), CFG)

@@ -15,14 +15,38 @@ MANUAL_PRICES = Path("data/prices_manual.csv")
 REQUIRED_COLUMNS = ["ticker", "quantity", "asset_class", "currency"]
 
 
+def benchmarks_of(cfg: dict) -> dict:
+    """Benchmarki z configu: nowy schemat 'benchmarks' lub legacy 'benchmark'.
+
+    Pierwszy wpis = benchmark główny (kryterium D1, kolumna benchmark_value
+    w historii); kolejne są porównawcze. Klucz 'name' opcjonalny (domyślnie
+    klucz konfiguracji).
+    """
+    b = cfg.get("benchmarks")
+    if b:
+        for key, spec in b.items():
+            if not {"ticker", "currency"} <= set(spec):
+                raise KeyError(f"benchmark '{key}': wymagane klucze ticker, currency")
+        return b
+    if "benchmark" in cfg:
+        return {"bench": {"name": "Benchmark", **cfg["benchmark"]}}
+    raise KeyError("brak sekcji 'benchmarks' (lub legacy 'benchmark') w configu")
+
+
+def bench_value_column(key: str, primary_key: str) -> str:
+    """Kolumna wartości benchmarku w historii; główny = benchmark_value (kompatybilność)."""
+    return "benchmark_value" if key == primary_key else f"benchmark_{key}_value"
+
+
 def load_config(path: Path = CONFIG_PATH) -> dict:
     """config.yaml z walidacją kluczy i sumy targetów."""
     with open(path, encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
-    for key in ["base_currency", "benchmark", "drift_threshold_pp",
+    for key in ["base_currency", "drift_threshold_pp",
                 "max_turnover_pct", "transaction_cost_pct", "targets"]:
         if key not in cfg:
             raise KeyError(f"{path}: brak klucza '{key}'")
+    benchmarks_of(cfg)
     if abs(sum(cfg["targets"].values()) - 1.0) > 1e-9:
         raise ValueError(f"{path}: targety muszą sumować się do 1.0")
     return cfg
@@ -61,13 +85,13 @@ def fx_rate(currency: str, base: str, prices: pd.DataFrame) -> float:
 
 
 def collect_tickers(portfolio: pd.DataFrame, cfg: dict) -> list[str]:
-    """Wszystkie tickery do pobrania: pozycje + benchmark + pary FX."""
+    """Wszystkie tickery do pobrania: pozycje + benchmarki + pary FX."""
     base = cfg["base_currency"]
     tickers = set(portfolio["ticker"].astype(str))
-    bench = cfg["benchmark"]
-    tickers.add(str(bench["ticker"]))
     currencies = set(portfolio["currency"].astype(str).str.upper())
-    currencies.add(str(bench["currency"]).upper())
+    for spec in benchmarks_of(cfg).values():
+        tickers.add(str(spec["ticker"]))
+        currencies.add(str(spec["currency"]).upper())
     for ccy in currencies:
         pair = fx_ticker(ccy, base)
         if pair:

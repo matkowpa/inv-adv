@@ -62,3 +62,25 @@ def test_unknown_class_raises():
 def test_missing_price_raises():
     with pytest.raises(ValueError, match="SPY"):
         build_snapshot(make_portfolio(), make_prices().iloc[1:], CFG)
+
+
+CFG2 = {
+    "base_currency": "PLN",
+    "targets": {"equity": 0.6, "crypto": 0.4},
+    "benchmarks": {
+        "spx": {"name": "S&P 500 (PLN)", "ticker": "^GSPC", "currency": "USD"},
+        "nasdaq": {"name": "Nasdaq-100 (PLN)", "ticker": "^NDX", "currency": "USD"},
+    },
+}
+
+
+def test_snapshot_multi_benchmark():
+    prices = pd.DataFrame({
+        "ticker": ["SPY", "BTC-USD", "^GSPC", "^NDX", "USDPLN=X"],
+        "price": [100.0, 50000.0, 5000.0, 20000.0, 4.0],
+    })
+    snap = build_snapshot(make_portfolio(), prices, CFG2)
+    # ^GSPC*4 = 20000; ^NDX*4 = 80000
+    assert snap.benchmark_values == {"spx": pytest.approx(20_000.0),
+                                     "nasdaq": pytest.approx(80_000.0)}
+    assert snap.benchmark_value == pytest.approx(20_000.0)  # pierwszy = główny

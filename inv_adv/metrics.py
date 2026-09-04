@@ -8,6 +8,8 @@ from pathlib import Path
 
 import pandas as pd
 
+from .data import bench_value_column
+
 HISTORY_PATH = Path("reports/history.csv")
 MIN_POINTS = 3  # < 3 punktów => brak miar ryzyka (protokół pokazuje adnotację)
 
@@ -26,8 +28,31 @@ class Metrics:
     n_points: int
     days: float                # dni od pierwszego do ostatniego punktu
     portfolio: SideMetrics
-    benchmark: SideMetrics
+    benchmarks: dict           # nazwa wyświetlana -> SideMetrics | None (brak danych)
     risk_free_annual: float
+
+    @property
+    def benchmark(self) -> SideMetrics:
+        """Benchmark główny (pierwszy w configu) — kompatybilność z wcześniejszym API."""
+        return next(iter(self.benchmarks.values()))
+
+
+def bench_cols_from_cfg(benchmarks: dict) -> dict[str, str]:
+    """Nazwa wyświetlana benchmarku -> kolumna w historii (pierwszy = główny)."""
+    primary = next(iter(benchmarks))
+    return {str(spec.get("name", key)): bench_value_column(key, primary)
+            for key, spec in benchmarks.items()}
+
+
+def _auto_bench_cols(history: pd.DataFrame) -> dict[str, str]:
+    """Kolumny benchmarków wykryte z danych (gdy nie podano configu, np. w CLI)."""
+    names: dict[str, str] = {}
+    if "benchmark_value" in history.columns:
+        names["Benchmark"] = "benchmark_value"
+    for c in history.columns:
+        if c.startswith("benchmark_") and c.endswith("_value") and c != "benchmark_value":
+            names[c.removeprefix("benchmark_").removesuffix("_value")] = c
+    return names
 
 
 def read_history(path: Path = HISTORY_PATH) -> pd.DataFrame:
@@ -59,9 +84,13 @@ def _side_metrics(values: list[float], intervals_per_year: float, days: float,
 
 def compute_metrics(history: pd.DataFrame, risk_free_annual: float = 0.0,
                     value_col: str = "total_value",
-                    bench_col: str = "benchmark_value") -> Metrics | None:
-    """Metryki portfela i benchmarku z historii snapshotów.
+                    bench_cols: dict[str, str] | None = None) -> Metrics | None:
+    """Metryki portfela i benchmarków z historii snapshotów.
 
+    bench_cols: nazwa wyświetlana -> kolumna wartości benchmarku; None = wykrycie
+    z danych. Każda strona liczona jest na własnym podzbiorze wierszy bez NaN,
+    więc dana kolumna benchmarku może zaczynać się później niż reszta historii
+    (stare wiersze bez dodanej kolumny nie blokują pozostałych serii).
     Zwraca None, gdy punktów < MIN_POINTS lub okres < 1 dzień. Annualizacja
     z rzeczywistych odstępów czasu (365 / średnia długość interwału), więc
     nieregularny rytm biegów nie zniekształca wyniku.
@@ -71,16 +100,28 @@ def compute_metrics(history: pd.DataFrame, risk_free_annual: float = 0.0,
     h = history.copy()
     h["date"] = pd.to_datetime(h["date"])
     h = h.sort_values("date").reset_index(drop=True)
-    days = (h["date"].iloc[-1] - h["date"].iloc[0]).total_seconds() / 86400.0
-    if days < 1:
+    cols = bench_cols if bench_cols is not None else _auto_bench_cols(h)
+
+    def side(col: str) -> SideMetrics | None:
+        if col not in h.columns:  # kolumna benchmarku jeszcze nie istnieje w historii
+            return None
+        sub = h[["date", col]].dropna()
+        if len(sub) < MIN_POINTS:
+            return None
+        days = (sub["date"].iloc[-1] - sub["date"].iloc[0]).total_seconds() / 86400.0
+        if days < 1:
+            return None
+        intervals_per_year = 365.0 / (days / (len(sub) - 1))
+        return _side_metrics(sub[col].astype(float).tolist(),
+                             intervals_per_year, days, risk_free_annual)
+
+    portfolio = side(value_col)
+    if portfolio is None:
         return None
-    intervals_per_year = 365.0 / (days / (len(h) - 1))
-    portfolio = _side_metrics(h[value_col].astype(float).tolist(),
-                              intervals_per_year, days, risk_free_annual)
-    benchmark = _side_metrics(h[bench_col].astype(float).tolist(),
-                              intervals_per_year, days, risk_free_annual)
+    benchmarks = {name: side(col) for name, col in cols.items()}
+    days = (h["date"].iloc[-1] - h["date"].iloc[0]).total_seconds() / 86400.0
     return Metrics(n_points=len(h), days=days, portfolio=portfolio,
-                   benchmark=benchmark, risk_free_annual=risk_free_annual)
+                   benchmarks=benchmarks, risk_free_annual=risk_free_annual)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -94,9 +135,13 @@ def main(argv: list[str] | None = None) -> int:
         print(f"za mało danych — metryki od {MIN_POINTS} punktów historii")
         return 0
     print(f"n={m.n_points} pkt | okres {m.days:.0f} dni (orientacyjnie przy małym n)")
-    for name, s in [("portfel", m.portfolio), ("benchmark", m.benchmark)]:
+    sides = [("portfel", m.portfolio)] + list(m.benchmarks.items())
+    for name, s in sides:
+        if s is None:
+            print(f"  {name:15s} brak danych (potrzeba {MIN_POINTS} punktów)")
+            continue
         sh = "n/d" if s.sharpe is None else f"{s.sharpe:.2f}"
-        print(f"  {name:9s} wynik {s.total_return:+.1%} | ann {s.annualized_return:+.1%} "
+        print(f"  {name:15s} wynik {s.total_return:+.1%} | ann {s.annualized_return:+.1%} "
               f"| vol {s.vol_annualized:.1%} | sharpe {sh} | maxDD {s.max_drawdown:.1%}")
     return 0
 

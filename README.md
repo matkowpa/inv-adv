@@ -7,7 +7,7 @@ System wspierania decyzji inwestycyjnych: **twardy rdzeń rebalancingu** (reguł
 | Faza | Zakres | Status |
 |---|---|---|
 | **F0 — rdzeń MVP** | przegląd portfela (M1), silnik rebalancingu (M2), protokół decyzji (M3) | ✅ ukończona — działa na realnym portfelu z IBKR |
-| **F1 — metryki i paper trading** | Sharpe/vol/drawdown vs S&P 500, historia biegów (→ G4) | 🔄 metryki gotowe; historia się buduje |
+| **F1 — metryki i paper trading** | Sharpe/vol/drawdown vs benchmarki (S&P 500, Nasdaq-100), historia biegów (→ G4) | 🔄 metryki gotowe; historia się buduje |
 | **F2 — eksperymenty LLM** | M4 komitet agentów (gate G1), M5 sentyment (gate G2) | ⬜ za gate'ami walidacyjnymi |
 | **F3 — skalowanie** | B2C / white-label | ⛔ zamrożona (analiza regulacyjna KNF/MiFID) |
 
@@ -29,7 +29,7 @@ Werdykt debaty rady modeli (Boardroom/idea-orch): **PIVOT** — rdzeń reguł bu
 - **Przegląd portfela (M1)** — wycena w PLN (kursy FX z Yahoo), alokacja per klasa, dryf vs targety
 - **Silnik rebalancingu (M2)** — R1: \|dryf\| > próg (domyślnie 5 p.p.) → transakcja do targetu, kwota dzielona proporcjonalnie na tickery; R2: limit obrotu z proporcjonalnym przeskalowaniem; deterministycznie, bez furtki (decyzja D3)
 - **Protokół decyzji (M3)** — audytowalny markdown: dane wejściowe, pozycje, reguły z ID, transakcje, wyjątki ręczne
-- **Metryki F1** — Sharpe/vol/max drawdown portfela vs S&P 500 (PLN): z historii biegów (od 3 punktów) oraz rekonstrukcja historyczna przy statycznym składzie
+- **Metryki F1** — Sharpe/vol/max drawdown portfela vs benchmarki (S&P 500 = główny wg D1, dodatkowe np. Nasdaq-100): z historii biegów (od 3 punktów) oraz rekonstrukcja historyczna przy statycznym składzie
 - **Lokalny dashboard** — samowystarczalny HTML (wykres base-100, alokacja, pełne pozycje) — **tylko lokalnie**
 
 ## Instalacja
@@ -48,11 +48,11 @@ pip install -r requirements.txt   # Python 3.12
 | `python -m inv_adv.metrics` | metryki z historii biegów (od 3 punktów) |
 | `python -m inv_adv.history_rebuild --period 1y` | historyczne metryki (statyczny skład) → `reports/history_rebuilt.csv` |
 | `python -m inv_adv.publish` | lokalny dashboard → `site/index.html` (pełne dane, nie publikować) |
-| `python -m pytest` | testy jednostkowe (27, offline) |
+| `python -m pytest` | testy jednostkowe (34, offline) |
 
 ## Konfiguracja
 
-- **`config.yaml`** — waluta bazowa, benchmark (S&P 500), próg dryfu R1, limit obrotu R2, `risk_free_annual`, **targety alokacji (decyzja właściciela — suma = 1.0)**
+- **`config.yaml`** — waluta bazowa, **benchmarki** (`benchmarks:` — pierwszy = główny wg D1, kolejne porównawcze, np. Nasdaq-100), próg dryfu R1, limit obrotu R2, `risk_free_annual`, **targety alokacji (decyzja właściciela — suma = 1.0)**
 - **`data/ibkr_mapping.yaml`** — `Symbol|Waluta` z IBKR → ticker Yahoo + klasa aktywa
 - **`data/portfolio.csv`** — pozycje (lokalne; regenerowane importem; wzór: `data/portfolio.example.csv`)
 - **`data/prices_manual.csv`** — ręczne nadpisanie cen (`ticker,price`), np. dla ETF-ów z GPW, gdy Yahoo bywa nieaktualne

@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-from .data import fx_rate
+from .data import benchmarks_of, fx_rate
 
 
 @dataclass
@@ -14,7 +14,8 @@ class Snapshot:
     total_value: float             # wartość portfela w walucie bazowej
     allocation: dict               # klasa -> udział (0..1)
     drift_pp: dict                 # klasa -> dryf w p.p. = (udział - target) * 100
-    benchmark_value: float         # wartość 1 jednostki benchmarku w walucie bazowej
+    benchmark_value: float         # wartość 1 jedn. benchmarku GŁÓWNEGO w walucie bazowej
+    benchmark_values: dict         # klucz benchmarku -> wartość 1 jedn. (kolejność z configu)
     targets: dict                  # klasa -> target udziału
 
 
@@ -44,11 +45,15 @@ def build_snapshot(portfolio: pd.DataFrame, prices: pd.DataFrame, cfg: dict) -> 
     allocation = (pos.groupby("asset_class")["value_base"].sum() / total) \
         .reindex(targets.keys(), fill_value=0.0).astype(float)
 
-    bench = cfg["benchmark"]
-    bench_price = price_of[str(bench["ticker"])]
-    bench_fx = fx_rate(str(bench["currency"]).upper(), base, prices)
+    bench_values = {
+        key: price_of[str(spec["ticker"])]
+             * fx_rate(str(spec["currency"]).upper(), base, prices)
+        for key, spec in benchmarks_of(cfg).items()
+    }
 
     drift_pp = {cls: (allocation[cls] - targets[cls]) * 100 for cls in targets}
     return Snapshot(positions=pos, total_value=total, allocation=allocation.to_dict(),
-                    drift_pp=drift_pp, benchmark_value=bench_price * bench_fx,
+                    drift_pp=drift_pp,
+                    benchmark_value=next(iter(bench_values.values())),
+                    benchmark_values=bench_values,
                     targets=dict(targets))

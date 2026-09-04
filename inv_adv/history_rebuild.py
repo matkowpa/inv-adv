@@ -16,8 +16,9 @@ from pathlib import Path
 
 import pandas as pd
 
-from inv_adv.data import fx_ticker, load_config, load_portfolio
-from inv_adv.metrics import compute_metrics
+from inv_adv.data import (bench_value_column, benchmarks_of, fx_ticker,
+                          load_config, load_portfolio)
+from inv_adv.metrics import bench_cols_from_cfg, compute_metrics
 
 REBUILT_PATH = Path("reports/history_rebuilt.csv")
 MIN_DIRECT_FRACTION = 0.5  # para bezpośrednia użyteczna, gdy pokrywa >= 50% wierszy
@@ -40,12 +41,13 @@ def fetch_history_prices(tickers: list[str], period: str) -> pd.DataFrame:
 
 
 def collect_history_tickers(portfolio: pd.DataFrame, cfg: dict) -> list[str]:
-    """Tickery do pobrania: pozycje + benchmark + pary FX (bezpośrednie i krzyże USD)."""
+    """Tickery do pobrania: pozycje + benchmarki + pary FX (bezpośrednie i krzyże USD)."""
     base = str(cfg["base_currency"]).upper()
-    bench = cfg["benchmark"]
-    tickers = set(portfolio["ticker"].astype(str)) | {str(bench["ticker"])}
-    currencies = (set(portfolio["currency"].astype(str).str.upper())
-                  | {str(bench["currency"]).upper()})
+    tickers: set[str] = set(portfolio["ticker"].astype(str))
+    currencies = set(portfolio["currency"].astype(str).str.upper())
+    for spec in benchmarks_of(cfg).values():
+        tickers.add(str(spec["ticker"]))
+        currencies.add(str(spec["currency"]).upper())
     currencies.discard(base)
     for ccy in currencies:
         direct = fx_ticker(ccy, base)
@@ -86,22 +88,26 @@ def build_series(portfolio: pd.DataFrame, close: pd.DataFrame,
                  cfg: dict) -> pd.DataFrame:
     """Dzienna wartość portfela i benchmarku (waluta bazowa), statyczny skład."""
     base = str(cfg["base_currency"]).upper()
-    bench = cfg["benchmark"]
+    benchmarks = benchmarks_of(cfg)
+    primary = next(iter(benchmarks))
     comps: dict[str, pd.Series] = {}
     for _, row in portfolio.iterrows():
         ticker, ccy = str(row["ticker"]), str(row["currency"]).upper()
         comps[f"pos_{ticker}_{ccy}"] = (close[ticker] * _fx_series(ccy, base, close)
                                         * float(row["quantity"]))
-    comps["benchmark"] = (close[str(bench["ticker"])]
-                          * _fx_series(str(bench["currency"]).upper(), base, close))
+    for key, spec in benchmarks.items():
+        comps[bench_value_column(key, primary)] = (
+            close[str(spec["ticker"])]
+            * _fx_series(str(spec["currency"]).upper(), base, close))
     df = pd.DataFrame(comps).dropna()  # wspólne okno czasowe wszystkich serii
     if df.empty:
         raise ValueError("brak wspólnego okna czasowego dla pozycji")
-    return pd.DataFrame({
-        "date": df.index.strftime("%Y-%m-%dT%H:%M:%S"),
-        "total_value": df[[c for c in df.columns if c.startswith("pos_")]].sum(axis=1),
-        "benchmark_value": df["benchmark"],
-    }).reset_index(drop=True)
+    data = {"date": df.index.strftime("%Y-%m-%dT%H:%M:%S"),
+            "total_value": df[[c for c in df.columns if c.startswith("pos_")]].sum(axis=1)}
+    for key in benchmarks:
+        col = bench_value_column(key, primary)
+        data[col] = df[col]
+    return pd.DataFrame(data).reset_index(drop=True)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -115,6 +121,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     cfg = load_config(Path(args.config))
+    benchmarks = benchmarks_of(cfg)
     portfolio = load_portfolio(Path(args.portfolio))
     close = fetch_history_prices(collect_history_tickers(portfolio, cfg), args.period)
     series = build_series(portfolio, close, cfg)
@@ -123,7 +130,8 @@ def main(argv: list[str] | None = None) -> int:
     out.parent.mkdir(parents=True, exist_ok=True)
     series.to_csv(out, index=False)
 
-    m = compute_metrics(series, risk_free_annual=args.risk_free)
+    m = compute_metrics(series, risk_free_annual=args.risk_free,
+                        bench_cols=bench_cols_from_cfg(benchmarks))
     print(f"Okres: {series['date'].iloc[0][:10]} -> {series['date'].iloc[-1][:10]} "
           f"({len(series)} sesji; założenie: statyczny skład)")
     print(f"Wartość: {series['total_value'].iloc[0]:,.0f} -> "
@@ -132,9 +140,13 @@ def main(argv: list[str] | None = None) -> int:
         print("za mało danych")
         return 0
     print(f"n={m.n_points} | {m.days:.0f} dni | rf={args.risk_free:.1%}")
-    for name, s in [("portfel", m.portfolio), ("S&P 500 PLN", m.benchmark)]:
+    sides = [("portfel", m.portfolio)] + list(m.benchmarks.items())
+    for name, s in sides:
+        if s is None:
+            print(f"  {name:18s} brak danych (potrzeba 3 punktów)")
+            continue
         sh = "n/d" if s.sharpe is None else f"{s.sharpe:.2f}"
-        print(f"  {name:12s} wynik {s.total_return:+.1%} | ann {s.annualized_return:+.1%} "
+        print(f"  {name:18s} wynik {s.total_return:+.1%} | ann {s.annualized_return:+.1%} "
               f"| vol {s.vol_annualized:.1%} | sharpe {sh} | maxDD {s.max_drawdown:.1%}")
     print(f"Seria zapisana: {out}")
     return 0

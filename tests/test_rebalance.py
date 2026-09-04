@@ -18,7 +18,8 @@ def make_snapshot(allocation, targets, total=100_000.0):
     })
     drift = {k: (allocation[k] - targets[k]) * 100 for k in targets}
     return Snapshot(positions=positions, total_value=total, allocation=dict(allocation),
-                    drift_pp=drift, benchmark_value=0.0, targets=dict(targets))
+                    drift_pp=drift, benchmark_value=0.0,
+                    benchmark_values={"bench": 0.0}, targets=dict(targets))
 
 
 def test_no_trade_within_band():

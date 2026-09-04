@@ -2,9 +2,17 @@
 
 base_currency: PLN
 
-benchmark:
-  ticker: ^GSPC          # S&P 500 (decyzja D1)
-  currency: USD          # waluta kwotowania benchmarku (konwertowana na base_currency)
+# Benchmarki — PIERWSZY jest głównym (kryterium D1, kolumna benchmark_value
+# w reports/history.csv); kolejne są porównawcze (kolumny benchmark_<klucz>_value).
+benchmarks:
+  spx:
+    name: S&P 500 (PLN)
+    ticker: ^GSPC          # S&P 500 (decyzja D1)
+    currency: USD          # waluta kwotowania indeksu (konwertowana na base_currency)
+  nasdaq:
+    name: Nasdaq-100 (PLN)
+    ticker: ^NDX
+    currency: USD
 
 drift_threshold_pp: 5.0    # R1: twardy próg dryfu w p.p. — transakcja do targetu
 max_turnover_pct: 20.0     # R2: limit obrotu na cykl (% wartości portfela)

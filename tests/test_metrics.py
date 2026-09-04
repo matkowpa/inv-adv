@@ -10,7 +10,10 @@ from inv_adv.review import build_snapshot
 CFG = {
     "base_currency": "PLN",
     "targets": {"equity": 0.6, "crypto": 0.4},
-    "benchmark": {"ticker": "^GSPC", "currency": "USD"},
+    "benchmarks": {
+        "spx": {"name": "S&P 500 (PLN)", "ticker": "^GSPC", "currency": "USD"},
+        "nasdaq": {"name": "Nasdaq-100 (PLN)", "ticker": "^NDX", "currency": "USD"},
+    },
 }
 PORTFOLIO = pd.DataFrame({
     "ticker": ["SPY", "BTC-USD"],
@@ -19,8 +22,8 @@ PORTFOLIO = pd.DataFrame({
     "currency": ["USD", "USD"],
 })
 PRICES = pd.DataFrame({
-    "ticker": ["SPY", "BTC-USD", "^GSPC", "USDPLN=X"],
-    "price": [100.0, 50000.0, 5000.0, 4.0],
+    "ticker": ["SPY", "BTC-USD", "^GSPC", "^NDX", "USDPLN=X"],
+    "price": [100.0, 50000.0, 5000.0, 20000.0, 4.0],
 })
 
 
@@ -58,18 +61,55 @@ def test_too_few_points_returns_none():
     assert compute_metrics(make_history([100.0, 102.0], [200.0, 201.0])) is None
 
 
+def test_metrics_multiple_benchmarks():
+    hist = make_history([100.0, 110.0, 99.0, 104.5], [200.0, 204.0, 200.0, 208.0])
+    hist["benchmark_nasdaq_value"] = [50.0, 55.0, 60.0, 66.0]
+    cols = {"S&P 500 (PLN)": "benchmark_value",
+            "Nasdaq-100 (PLN)": "benchmark_nasdaq_value"}
+    m = compute_metrics(hist, bench_cols=cols)
+    assert m is not None
+    assert m.benchmarks["S&P 500 (PLN)"].total_return == pytest.approx(0.04)
+    assert m.benchmarks["Nasdaq-100 (PLN)"].total_return == pytest.approx(0.32)
+    assert m.benchmark is m.benchmarks["S&P 500 (PLN)"]  # pierwszy = główny
+
+
+def test_missing_benchmark_column_is_none():
+    # stare wiersze bez kolumny nasdaq (NaN) nie blokują metryk S&P
+    hist = make_history([100.0, 110.0, 99.0, 104.5], [200.0, 204.0, 200.0, 208.0])
+    hist.loc[0, "benchmark_value"] = float("nan")  # S&P: 3 pełne punkty
+    cols = {"S&P 500 (PLN)": "benchmark_value",
+            "Nasdaq-100 (PLN)": "benchmark_nasdaq_value"}
+    m = compute_metrics(hist, bench_cols=cols)
+    assert m is not None
+    spx = m.benchmarks["S&P 500 (PLN)"]
+    assert spx.total_return == pytest.approx(208.0 / 204.0 - 1.0)  # [204, 200, 208]
+    assert m.benchmarks["Nasdaq-100 (PLN)"] is None
+
+
+def test_auto_detect_bench_columns():
+    hist = make_history([100.0, 110.0, 99.0, 104.5], [200.0, 204.0, 200.0, 208.0])
+    hist["benchmark_nasdaq_value"] = [50.0, 55.0, 60.0, 66.0]
+    m = compute_metrics(hist)  # bez bench_cols — wykrycie z danych (ścieżka CLI)
+    assert list(m.benchmarks) == ["Benchmark", "nasdaq"]
+    assert m.benchmark.total_return == pytest.approx(0.04)
+
+
 def test_protocol_includes_metrics_section(tmp_path):
     snap = build_snapshot(PORTFOLIO, PRICES, CFG)
     trades, fired = propose_trades(snap, threshold_pp=5.0, max_turnover_pct=100.0)
-    m = compute_metrics(make_history([100.0, 110.0, 99.0, 104.5],
-                                     [200.0, 204.0, 200.0, 208.0]))
+    hist = make_history([100.0, 110.0, 99.0, 104.5], [200.0, 204.0, 200.0, 208.0])
+    m = compute_metrics(hist, bench_cols={"S&P 500 (PLN)": "benchmark_value",
+                                          "Nasdaq-100 (PLN)": "benchmark_nasdaq_value"})
     path = write_protocol(snap, trades, fired, "fixtures", base_currency="PLN",
-                          out_dir=tmp_path / "decisions", metrics=m)
+                          out_dir=tmp_path / "decisions", metrics=m,
+                          benchmarks=CFG["benchmarks"])
     text = path.read_text(encoding="utf-8")
     assert "Metryki (F1)" in text
     assert "n=4" in text
     assert "Sharpe" in text
     assert "+4.5%" in text  # wynik okresu portfela
+    assert "Nasdaq-100 (PLN)" in text  # nagłówek danych wejściowych + kolumna tabeli
+    assert "n/d" in text  # brak danych nasdaq w historii (kolumna nie istnieje)
 
 
 def test_protocol_metrics_none_note(tmp_path):

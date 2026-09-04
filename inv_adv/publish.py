@@ -16,10 +16,11 @@ from pathlib import Path
 
 import pandas as pd
 
-from inv_adv.data import collect_tickers, fetch_prices, load_config, load_portfolio
+from inv_adv.data import (benchmarks_of, collect_tickers, fetch_prices,
+                          load_config, load_portfolio)
 from inv_adv.history_rebuild import (build_series, collect_history_tickers,
                                      fetch_history_prices)
-from inv_adv.metrics import compute_metrics
+from inv_adv.metrics import bench_cols_from_cfg, compute_metrics
 from inv_adv.review import build_snapshot
 
 SITE_PATH = Path("site/index.html")
@@ -85,13 +86,17 @@ def build_page(cfg: dict, portfolio: pd.DataFrame, prices: pd.DataFrame,
     """Pełny HTML dashboardu z podanych danych (bez dostępu do sieci)."""
     snap = build_snapshot(portfolio, prices, cfg)
     base = str(cfg["base_currency"])
-    m = compute_metrics(series, risk_free_annual=float(cfg.get("risk_free_annual", 0.0)))
+    benchmarks = benchmarks_of(cfg)
+    cols = bench_cols_from_cfg(benchmarks)
+    m = compute_metrics(series, risk_free_annual=float(cfg.get("risk_free_annual", 0.0)),
+                        bench_cols=cols)
 
     dates = series["date"].astype(str).tolist()
-    chart = _svg_chart(dates, {
-        "Portfel": series["total_value"].astype(float).tolist(),
-        "S&P 500 (PLN)": series["benchmark_value"].astype(float).tolist(),
-    })
+    chart_series = {"Portfel": series["total_value"].astype(float).tolist()}
+    for name, col in cols.items():
+        if col in series.columns:
+            chart_series[name] = series[col].astype(float).tolist()
+    chart = _svg_chart(dates, chart_series)
 
     if m is None:
         metrics_html = "<p>za mało danych</p>"
@@ -102,23 +107,23 @@ def build_page(cfg: dict, portfolio: pd.DataFrame, prices: pd.DataFrame,
             return f"{x:+.2f}" if kind == "sharpe" else f"{x:+.1%}"
 
         rf = m.risk_free_annual
-        rows = [
-            ["wynik okresu", cell(m.portfolio.total_return, "pct"),
-             cell(m.benchmark.total_return, "pct")],
-            ["wynik annualizowany", cell(m.portfolio.annualized_return, "pct"),
-             cell(m.benchmark.annualized_return, "pct")],
-            ["zmienność roczna", cell(m.portfolio.vol_annualized, "pct"),
-             cell(m.benchmark.vol_annualized, "pct")],
-            [f"Sharpe (rf={rf:.1%})" if rf else "Sharpe (rf=0%)",
-             cell(m.portfolio.sharpe, "sharpe"), cell(m.benchmark.sharpe, "sharpe")],
-            ["max drawdown", cell(m.portfolio.max_drawdown, "pct"),
-             cell(m.benchmark.max_drawdown, "pct")],
+        rf_label = f"Sharpe (rf={rf:.1%})" if rf else "Sharpe (rf=0%)"
+        sides = [m.portfolio] + [m.benchmarks[name] for name in cols]
+        row_specs = [
+            ("wynik okresu", "total_return", "pct"),
+            ("wynik annualizowany", "annualized_return", "pct"),
+            ("zmienność roczna", "vol_annualized", "pct"),
+            (rf_label, "sharpe", "sharpe"),
+            ("max drawdown", "max_drawdown", "pct"),
         ]
+        rows = [[label] + [cell(None if s is None else getattr(s, attr), kind)
+                           for s in sides]
+                for label, attr, kind in row_specs]
         metrics_html = (
             f"<p>n={m.n_points} sesji, okres {m.days:.0f} dni "
             f"({series['date'].iloc[0][:10]} &rarr; {series['date'].iloc[-1][:10]}) — "
             f"założenie statycznego składu portfela</p>"
-            + _table(["metryka", "portfel", "S&P 500 (PLN)"], rows))
+            + _table(["metryka", "portfel", *cols], rows))
 
     alloc_rows = []
     for cls, target in snap.targets.items():
@@ -144,6 +149,14 @@ def build_page(cfg: dict, portfolio: pd.DataFrame, prices: pd.DataFrame,
 
     hist_path = Path("reports/history.csv")
     hist_pts = str(len(pd.read_csv(hist_path))) if hist_path.exists() else "0"
+
+    bench_names = {key: str(spec.get("name", key)) for key, spec in benchmarks.items()}
+    bench_label = " | ".join(f"{name} [{benchmarks[key]['ticker']}]"
+                             for key, name in bench_names.items())
+    bench_cards = "".join(
+        f'<div class="kpi"><div class="v">{snap.benchmark_values[key]:,.2f} {escape(base)}</div>'
+        f'<div class="l">{escape(name)} — 1 jedn.</div></div>'
+        for key, name in bench_names.items())
 
     css = (
         "body{font-family:system-ui,'Segoe UI',Arial,sans-serif;margin:0;"
@@ -181,7 +194,7 @@ def build_page(cfg: dict, portfolio: pd.DataFrame, prices: pd.DataFrame,
 <header>
   <h1>inv-adv — wyniki portfela</h1>
   <p>wygenerowano: {escape(generated)} | waluta bazowa: {escape(base)} | \
-benchmark: {escape(str(cfg['benchmark']['ticker']))}</p>
+benchmarki: {escape(bench_label)}</p>
 </header>
 <div class="note"><b>LOKALNY PLIK</b> — zawiera pełne dane pozycyjne i kwoty. \
 Nie publikuj w internecie (site/ jest w .gitignore).</div>
@@ -189,8 +202,7 @@ Nie publikuj w internecie (site/ jest w .gitignore).</div>
   <div class="kpis">
     <div class="kpi"><div class="v">{snap.total_value:,.2f} {escape(base)}</div>
       <div class="l">wartość portfela</div></div>
-    <div class="kpi"><div class="v">{snap.benchmark_value:,.2f} {escape(base)}</div>
-      <div class="l">S&amp;P 500 — 1 jedn. ({escape(str(cfg['benchmark']['ticker']))})</div></div>
+{bench_cards}
     <div class="kpi"><div class="v">{len(snap.positions)}</div>
       <div class="l">pozycji</div></div>
     <div class="kpi"><div class="v">{hist_pts}</div>
