@@ -70,6 +70,8 @@ Werdykt PIVOT wymusza dwuwarstwowy model:
 - Python 3.12; pandas do obliczeń portfelowych; git jako magazyn raportów i protokołów.
 - Dane rynkowe (decyzja D4): benchmarki i dane rynkowe ze źródeł publicznych (Stooq, Yahoo
   i inne) lub API brokera (np. XTB); skład portfela (pozycje i ilości) — z własnych zapisów (CSV).
+- Benchmarki polskie (2026-09-10): Stooq odpada (blokada anti-bot — zwraca HTML zamiast CSV);
+  WIG20 z Yahoo (`WIG20.WA`), mWIG40TR jako proxy Beta ETF mWIG40TR (`ETFBM40TR.WA`).
 - Warstwa LLM (tylko M4/M5, po gate'ach): LiteLLM + OpenRouter — jedna konfiguracja z idea-orch.
 
 ## 5. Fazy realizacji
@@ -104,5 +106,6 @@ decyzją właściciela (profil 100% ryzykowny).
 | D2 | Portfel i budżet | Portfel 1 000 000; dane 1 000/rok; LLM 1 000/rok → razem 2 000/rok = 0,2% portfela | **G3: PRZEJŚCIE** — ekonomika nie blokuje developmentu |
 | D3 | Obszar dyskrecjonalny | NIE — system zawsze wykonuje regułę; wyjątek tylko ręcznie, z wpisem w logu | M2 bez furtki dyskrecjonalnej |
 | D4 | Źródło danych | Źródła publiczne (Stooq, Yahoo i inne) lub API brokera (np. XTB) | §4: dane rynkowe |
+| D5 | Targety alokacji (krypto) | Krypto = aktualna alokacja BITC.AS (~4,7%); nadwyżka 5,3 p.p. → equity_us (60,3%); R1 nie odpala | `config.yaml` targets; brak propozycji BUY krypto w protokołach |
 
 Założenie do D2: wszystkie trzy liczby w tej samej walucie.

@@ -10,6 +10,7 @@
 | D2 | Portfel i budżet (dane + LLM) | ZAMKNIĘTE | gate G3 (ekonomika) |
 | D3 | Obszar dyskrecjonalny | ZAMKNIĘTE | projekt modułu M2 |
 | D4 | Źródło danych rynkowych | ZAMKNIĘTE | implementację M1 (F0) |
+| D5 | Targety alokacji (krypto) | ZAMKNIĘTE | działanie R1: bez fałszywych propozycji BUY krypto |
 | D6 | Los warstwy LLM (M4) po G1 | OTWARTE | fazę F2: zamknięcie M4 lub kalibrację i re-test |
 
 ## D1. Próg porażki projektu
@@ -46,6 +47,23 @@ Portfel: 1 000 000; budżet: dane 1 000/rok, LLM 1 000/rok (łącznie 2 000/rok)
 
 **Wynik gate'a G3:** 2 000 / 1 000 000 = 0,2% < 0,3–0,5% → **PRZEJŚCIE**
 (założenie: wszystkie trzy liczby w tej samej walucie). 
+
+## D5. Targety alokacji — krypto
+
+**Pytanie:** jaki target dla klasy `crypto` po likwidacji ETH (W0 status quo 10% → R1
+proponuje BUY BITC ~75 tys. PLN co tydzień; warianty W0–W3 w
+[what-if-targets.md](what-if-targets.md))?
+
+**Wpływa na:** działanie silnika M2 (R1), strukturę portfela.
+
+**Status:** ZAMKNIĘTE
+
+**Odpowiedź (2026-09-10):**
+Nowy limit krypto = aktualna alokacja BITC.AS (~4,7%). R1 nie odpala (dryf ~0 p.p.),
+brak propozycji transakcji. Nadwyżka 5,3 p.p. z krypto trafia do `equity_us`
+(nowy target 60,3%; suma targetów = 1,0). Precedent: wariant W2 z what-if
+(„krypto pod kontrolą"), z tą różnicą, że nie sprzedajemy — tylko obniżamy target.
+Wdrożone w `config.yaml` (targets).
 
 ## D3. Obszar dyskrecjonalny
 
@@ -94,4 +112,8 @@ targetów), a próg 30 p.p. został sfalsyfikowany podczas samej debaty (Goodhar
 **Status:** OTWARTE
 
 **Odpowiedź:**
-(tu wpisz decyzję — a lub b)
+b
+
+**Materiały kalibracji (kroki 2–5 wykonane):** [g1-retest.md](g1-retest.md) — próg
+skalibrowany 128 p.p. (symulacja 20 par, seed=42); przed re-testem wykonać krok 1
+(baseline niedeterminizmu); skrypt: `scripts/g1_calibration.py`.

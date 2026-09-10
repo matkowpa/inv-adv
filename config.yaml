@@ -13,6 +13,14 @@ benchmarks:
     name: Nasdaq-100 (PLN)
     ticker: ^NDX
     currency: USD
+  wig20:
+    name: WIG20 (PLN)
+    ticker: WIG20.WA      # indeks GPW (Yahoo); Stooq odpada — blokada anti-bot (2026-09-10)
+    currency: PLN
+  mwig40tr:
+    name: mWIG40TR (PLN, proxy ETF)
+    ticker: ETFBM40TR.WA  # Beta ETF mWIG40TR jako proxy indeksu total-return (ticker Yahoo)
+    currency: PLN
 
 drift_threshold_pp: 5.0    # R1: twardy próg dryfu w p.p. — transakcja do targetu
 max_turnover_pct: 20.0     # R2: limit obrotu na cykl (% wartości portfela)
@@ -20,12 +28,14 @@ transaction_cost_pct: 0.2  # założenie kosztu transakcyjnego (%) — estymata 
 risk_free_annual: 0.0      # stopa wolna od ryzyka do Sharpe (porównanie D1 jest względne)
 
 # targety alokacji — EDYTUJ (decyzja D1: 100% akcje + krypto; klasy wg realnego portfela IBKR).
+# D5 (2026-09-10): krypto = aktualna alokacja BITC.AS (~4.7%) — R1 nie odpala (dryf 0).
+#   Nadwyżka 5.3 p.p. przeznaczona na equity_us (precedent: wariant W2 z what-if-targets).
 # Klasy muszą sumować się do 1.0 i odpowiadać kolumnie asset_class w data/portfolio.csv
 # (przypisania: data/ibkr_mapping.yaml).
 targets:
-  equity_us: 0.55        # SXR8, VUAA, BCFP, HX60, ZPDF, 2B70, IUCD
-  equity_pl: 0.15        # Beta ETF mWIG40TR
-  equity_thematic: 0.10  # RBOT (automatyka/robotyka)
-  equity_em: 0.08        # EMQQ (internet/e-commerce EM)
-  equity_single: 0.02    # INTRUM (pojedyncza akcja)
-  crypto: 0.10           # BITC + WisdomTree Ethereum
+  equity_us: 0.603      # SXR8, VUAA, BCFP, HX60, ZPDF, 2B70, IUCD (55 + 5.3 z krypto, D5)
+  equity_pl: 0.15       # Beta ETF mWIG40TR
+  equity_thematic: 0.10 # RBOT (automatyka/robotyka)
+  equity_em: 0.08       # EMQQ (internet/e-commerce EM)
+  equity_single: 0.02   # INTRUM (pojedyncza akcja)
+  crypto: 0.047         # BITC — target = aktualna alokacja (decyzja D5)
