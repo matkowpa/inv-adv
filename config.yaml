@@ -9,6 +9,10 @@ benchmarks:
     name: S&P 500 (PLN)
     ticker: ^GSPC          # S&P 500 (decyzja D1)
     currency: USD          # waluta kwotowania indeksu (konwertowana na base_currency)
+  spx_tr:
+    name: S&P 500 TR (PLN)
+    ticker: ^SP500TR       # total return — porównanie wrażliwe na dywidendy; nie jest jeszcze głównym D1
+    currency: USD
   nasdaq:
     name: Nasdaq-100 (PLN)
     ticker: ^NDX
@@ -24,7 +28,10 @@ benchmarks:
 
 drift_threshold_pp: 5.0    # R1: twardy próg dryfu w p.p. — transakcja do targetu
 max_turnover_pct: 20.0     # R2: limit obrotu na cykl (% wartości portfela)
-transaction_cost_pct: 0.2  # założenie kosztu transakcyjnego (%) — estymata w protokole
+transaction_cost_pct: 0.2  # koszt transakcyjny (%) — liczony w M2 i protokole (fee)
+min_trade_amount: 500.0    # Rmin: zlecenia poniżej 500 PLN są pomijane z wpisem w protokole
+lot_sizes: {}              # opcjonalnie: ticker -> wielokrotność jednostek, np. {SXR8.DE: 1}
+paper_trading_weeks: 12    # metryki D1 dopiero po tylu tygodniach biegów scheduled
 risk_free_annual: 0.0      # stopa wolna od ryzyka do Sharpe (porównanie D1 jest względne)
 
 # targety alokacji — EDYTUJ (decyzja D1: 100% akcje + krypto; klasy wg realnego portfela IBKR).

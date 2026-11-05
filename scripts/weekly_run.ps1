@@ -9,7 +9,7 @@ $log = Join-Path $logDir ("run-{0}.log" -f (Get-Date -Format "yyyy-MM-dd"))
 
 "=== inv-adv weekly run: {0} ===" -f (Get-Date -Format "yyyy-MM-dd HH:mm:ss") *>> $log
 
-python run.py *>> $log
+python run.py --scheduled *>> $log
 if ($LASTEXITCODE -ne 0) {
     "BLAD: run.py zakonczyl sie kodem $LASTEXITCODE - punkt historii NIE zostal dopisany" *>> $log
     exit 1

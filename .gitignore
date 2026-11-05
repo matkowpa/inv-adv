@@ -21,3 +21,4 @@ site/
 
 # logi cotygodniowych biegów (operacyjne; protokoły = właściwy audyt)
 reports/logs/
+reports/status.json

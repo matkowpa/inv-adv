@@ -23,7 +23,8 @@ def write_protocol(snapshot: Snapshot, trades: list[Trade], fired_rules: list[st
                    prices_meta: str, base_currency: str = "",
                    out_dir: Path = DECISIONS_DIR,
                    metrics: "Metrics | None" = None,
-                   benchmarks: dict | None = None) -> Path:
+                   benchmarks: dict | None = None,
+                   run_kind: str = "") -> Path:
     """Protokół decyzji w markdown: dane wejściowe, migawka, metryki, reguły, transakcje."""
     now = dt.datetime.now()
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -37,6 +38,8 @@ def write_protocol(snapshot: Snapshot, trades: list[Trade], fired_rules: list[st
         f"- źródło cen: {prices_meta}",
         f"- wartość portfela: {snapshot.total_value:,.2f}{ccy}",
     ]
+    if run_kind:
+        lines.append(f"- run_kind: {run_kind}")
     if benchmarks:
         for key, spec in benchmarks.items():
             lines.append(f"- benchmark {spec.get('name', key)} (1 jedn.): "
@@ -106,14 +109,17 @@ def write_protocol(snapshot: Snapshot, trades: list[Trade], fired_rules: list[st
 
     lines += ["", "## Proponowane transakcje (M2)", ""]
     if trades:
-        lines += ["| # | kierunek | klasa | ticker | kwota | ~jednostki | reguła |",
-                  "|---|---|---|---|---|---|---|"]
+        lines += ["| # | kierunek | klasa | ticker | kwota | koszt | ~jednostki | reguła |",
+                  "|---|---|---|---|---|---|---|---|"]
         for i, t in enumerate(trades, 1):
             lines.append(f"| {i} | {t.direction} | {t.asset_class} | {t.ticker} "
-                         f"| {t.amount:,.2f}{ccy} | {t.units:,.4f} | {t.rule} |")
+                         f"| {t.amount:,.2f}{ccy} | {t.fee:,.2f}{ccy} "
+                         f"| {t.units:,.4f} | {t.rule} |")
         turnover = sum(t.amount for t in trades)
+        fees = sum(t.fee for t in trades)
         lines += ["", f"Obrót łączny: {turnover:,.2f}{ccy} "
-                      f"({turnover / snapshot.total_value * 100:.1f}% portfela)"]
+                      f"({turnover / snapshot.total_value * 100:.1f}% portfela) "
+                      f"| koszty: {fees:,.2f}{ccy}"]
     else:
         lines.append("brak — portfel w paśmie progowym")
 
@@ -128,20 +134,32 @@ def write_protocol(snapshot: Snapshot, trades: list[Trade], fired_rules: list[st
     return path
 
 
-def append_history(snapshot: Snapshot, path: Path = HISTORY_PATH) -> None:
+def append_history(snapshot: Snapshot, path: Path = HISTORY_PATH,
+                   run_kind: str = "manual",
+                   now: dt.datetime | None = None) -> str:
     """Dopisuje wiersz migawki (buduje serię pod metryki w F1).
+
+    `run_kind` rozdziela serie: `scheduled` (paper trading), `manual`
+    (uruchomienia ręczne) i `smoke` (testy). Tylko `scheduled` wchodzi do
+    metryk D1, a bieg scheduled jest idempotentny w obrębie tygodnia ISO —
+    ponowne uruchomienie w tym samym tygodniu aktualizuje istniejący punkt
+    zamiast dopisywać duplikat.
 
     Obsługuje ewolucję schematu: gdy wiersz zawiera nowe kolumny (np. dodany
     benchmark), plik jest przepisywany ze scalonym nagłówkiem — stare wiersze
     dostają NaN w nowych kolumnach. Benchmark główny trafia do legacy kolumny
     benchmark_value (kryterium D1, kompatybilność wstecz).
+
+    Zwraca `created`, `appended` albo `updated` — do statusu operacyjnego.
     """
+    now = now or dt.datetime.now()
     bench_values = snapshot.benchmark_values
     primary = next(iter(bench_values))
     row = {
-        "date": dt.datetime.now().isoformat(timespec="seconds"),
+        "date": now.isoformat(timespec="seconds"),
         "total_value": snapshot.total_value,
         "benchmark_value": bench_values[primary],
+        "run_kind": run_kind,
     }
     for key, value in bench_values.items():
         if key != primary:
@@ -150,9 +168,31 @@ def append_history(snapshot: Snapshot, path: Path = HISTORY_PATH) -> None:
         row[f"share_{cls}"] = round(snapshot.allocation[cls], 6)
 
     path.parent.mkdir(parents=True, exist_ok=True)
-    if path.exists():
-        old = pd.read_csv(path)
-        merged = pd.concat([old, pd.DataFrame([row])], ignore_index=True)
-        merged.to_csv(path, index=False)
-    else:
+    if not path.exists():
         pd.DataFrame([row]).to_csv(path, index=False, header=True)
+        return "created"
+
+    old = pd.read_csv(path)
+    if "run_kind" not in old.columns:
+        # Stare wiersze nie mają informacji o pochodzeniu — traktujemy je
+        # jako ręczne/prehistorię, nie jako paper trading.
+        old["run_kind"] = "legacy"
+
+    if run_kind == "scheduled":
+        dates = pd.to_datetime(old["date"], errors="coerce")
+        iso = now.isocalendar()
+        same_week = (
+            (old["run_kind"].astype(str) == "scheduled")
+            & (dates.dt.isocalendar()["year"] == iso.year)
+            & (dates.dt.isocalendar()["week"] == iso.week)
+        )
+        if same_week.any():
+            idx = old.index[same_week][0]
+            for key, value in row.items():
+                old.loc[idx, key] = value
+            old.to_csv(path, index=False)
+            return "updated"
+
+    merged = pd.concat([old, pd.DataFrame([row])], ignore_index=True)
+    merged.to_csv(path, index=False)
+    return "appended"

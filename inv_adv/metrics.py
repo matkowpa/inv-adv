@@ -30,6 +30,8 @@ class Metrics:
     portfolio: SideMetrics
     benchmarks: dict           # nazwa wyświetlana -> SideMetrics | None (brak danych)
     risk_free_annual: float
+    n_weeks: int = 0           # unikalne tygodnie ISO po filtry run_kind
+    run_kinds: tuple[str, ...] = ()
 
     @property
     def benchmark(self) -> SideMetrics:
@@ -82,24 +84,61 @@ def _side_metrics(values: list[float], intervals_per_year: float, days: float,
     return SideMetrics(total, ann, vol, sharpe, dd)
 
 
+def _prepare_history(history: pd.DataFrame,
+                     run_kinds: tuple[str, ...] | None = None) -> pd.DataFrame:
+    """Normalizuje daty i opcjonalnie filtruje serię po pochodzeniu biegu.
+
+    Stare pliki bez kolumny `run_kind` traktujemy jako `legacy` — nie wchodzą
+    do paper tradingu, ale nadal można na nich liczyć metryki ręcznie.
+    """
+    h = history.copy()
+    h["date"] = pd.to_datetime(h["date"], errors="coerce")
+    h = h.dropna(subset=["date"]).sort_values("date").reset_index(drop=True)
+    if "run_kind" in h.columns:
+        h["run_kind"] = h["run_kind"].fillna("legacy").astype(str)
+    else:
+        h["run_kind"] = "legacy"
+    if run_kinds is not None:
+        h = h[h["run_kind"].isin(tuple(run_kinds))].reset_index(drop=True)
+    return h
+
+
+def history_weeks(history: pd.DataFrame,
+                  run_kinds: tuple[str, ...] | None = None) -> int:
+    """Liczba unikalnych tygodni ISO w (opcjonalnie filtrowanej) historii."""
+    h = _prepare_history(history, run_kinds)
+    if h.empty:
+        return 0
+    return int(h["date"].dt.to_period("W").nunique())
+
+
 def compute_metrics(history: pd.DataFrame, risk_free_annual: float = 0.0,
                     value_col: str = "total_value",
-                    bench_cols: dict[str, str] | None = None) -> Metrics | None:
+                    bench_cols: dict[str, str] | None = None,
+                    run_kinds: tuple[str, ...] | None = None,
+                    require_weeks: int = 0) -> Metrics | None:
     """Metryki portfela i benchmarków z historii snapshotów.
 
     bench_cols: nazwa wyświetlana -> kolumna wartości benchmarku; None = wykrycie
     z danych. Każda strona liczona jest na własnym podzbiorze wierszy bez NaN,
     więc dana kolumna benchmarku może zaczynać się później niż reszta historii
     (stare wiersze bez dodanej kolumny nie blokują pozostałych serii).
-    Zwraca None, gdy punktów < MIN_POINTS lub okres < 1 dzień. Annualizacja
-    z rzeczywistych odstępów czasu (365 / średnia długość interwału), więc
-    nieregularny rytm biegów nie zniekształca wyniku.
+
+    run_kinds: opcjonalny filtr pochodzenia (`("scheduled",)` dla paper
+    tradingu); None = wszystkie wiersze. require_weeks: minimalna liczba
+    unikalnych tygodni ISO, zanim metryki w ogóle powstają (0 = bez progu).
+
+    Zwraca None, gdy punktów < MIN_POINTS, okres < 1 dzień albo wymagany
+    próg tygodni nie jest spełniony. Annualizacja z rzeczywistych odstępów
+    czasu (365 / średnia długość interwału), więc nieregularny rytm biegów
+    nie zniekształca wyniku.
     """
-    if len(history) < MIN_POINTS:
+    h = _prepare_history(history, run_kinds)
+    if len(h) < MIN_POINTS:
         return None
-    h = history.copy()
-    h["date"] = pd.to_datetime(h["date"])
-    h = h.sort_values("date").reset_index(drop=True)
+    weeks = int(h["date"].dt.to_period("W").nunique())
+    if require_weeks and weeks < require_weeks:
+        return None
     cols = bench_cols if bench_cols is not None else _auto_bench_cols(h)
 
     def side(col: str) -> SideMetrics | None:
@@ -121,20 +160,33 @@ def compute_metrics(history: pd.DataFrame, risk_free_annual: float = 0.0,
     benchmarks = {name: side(col) for name, col in cols.items()}
     days = (h["date"].iloc[-1] - h["date"].iloc[0]).total_seconds() / 86400.0
     return Metrics(n_points=len(h), days=days, portfolio=portfolio,
-                   benchmarks=benchmarks, risk_free_annual=risk_free_annual)
+                   benchmarks=benchmarks, risk_free_annual=risk_free_annual,
+                   n_weeks=weeks, run_kinds=tuple(run_kinds or ()))
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="inv-adv F1: metryki z historii")
     parser.add_argument("--history", default=str(HISTORY_PATH))
     parser.add_argument("--risk-free", type=float, default=0.0)
+    parser.add_argument("--run-kinds", default=None,
+                        help="filtr pochodzenia, np. scheduled (domyślnie wszystkie)")
+    parser.add_argument("--require-weeks", type=int, default=0,
+                        help="minimalna liczba unikalnych tygodni ISO")
     args = parser.parse_args(argv)
 
-    m = compute_metrics(read_history(Path(args.history)), args.risk_free)
+    run_kinds = tuple(x.strip() for x in args.run_kinds.split(",") if x.strip()) \
+        if args.run_kinds else None
+    history = read_history(Path(args.history))
+    m = compute_metrics(history, args.risk_free, run_kinds=run_kinds,
+                        require_weeks=args.require_weeks)
     if m is None:
-        print(f"za mało danych — metryki od {MIN_POINTS} punktów historii")
+        weeks = history_weeks(history, run_kinds)
+        need = f" (jest {weeks}, potrzeba {args.require_weeks})" if args.require_weeks else ""
+        print(f"za mało danych — metryki od {MIN_POINTS} punktów i "
+              f"{args.require_weeks or 0} tygodni{need}")
         return 0
-    print(f"n={m.n_points} pkt | okres {m.days:.0f} dni (orientacyjnie przy małym n)")
+    print(f"n={m.n_points} pkt | tygodnie={m.n_weeks} | okres {m.days:.0f} dni "
+          f"(orientacyjnie przy małym n)")
     sides = [("portfel", m.portfolio)] + list(m.benchmarks.items())
     for name, s in sides:
         if s is None:

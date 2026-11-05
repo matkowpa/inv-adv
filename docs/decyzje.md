@@ -11,7 +11,7 @@
 | D3 | Obszar dyskrecjonalny | ZAMKNIĘTE | projekt modułu M2 |
 | D4 | Źródło danych rynkowych | ZAMKNIĘTE | implementację M1 (F0) |
 | D5 | Targety alokacji (krypto) | ZAMKNIĘTE | działanie R1: bez fałszywych propozycji BUY krypto |
-| D6 | Los warstwy LLM (M4) po G1 | OTWARTE | fazę F2: zamknięcie M4 lub kalibrację i re-test |
+| D6 | Los warstwy LLM (M4) po G1 | ZAMKNIĘTE (b) | fazę F2: kalibracja i re-test G1 |
 
 ## D1. Próg porażki projektu
 
@@ -109,7 +109,7 @@ targetów), a próg 30 p.p. został sfalsyfikowany podczas samej debaty (Goodhar
 
 **Wpływa na:** fazę F2 i przyszłość modułu M4.
 
-**Status:** OTWARTE
+**Status:** ZAMKNIĘTE (b)
 
 **Odpowiedź:**
 b

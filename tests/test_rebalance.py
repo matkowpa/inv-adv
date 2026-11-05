@@ -65,3 +65,48 @@ def test_deterministic():
     assert [(t.ticker, t.direction, round(t.amount, 9)) for t in t1] == \
            [(t.ticker, t.direction, round(t.amount, 9)) for t in t2]
     assert f1 == f2
+
+
+def test_transaction_fee_and_net_amount():
+    snap = make_snapshot({"a": 0.56, "b": 0.44}, {"a": 0.5, "b": 0.5})
+    trades, _ = propose_trades(snap, 5.0, 100.0, transaction_cost_pct=0.2)
+    assert len(trades) == 2
+    for t in trades:
+        assert t.amount == pytest.approx(6_000.0)
+        assert t.fee == pytest.approx(12.0)
+    sell = next(t for t in trades if t.direction == "SELL")
+    buy = next(t for t in trades if t.direction == "BUY")
+    assert sell.net_amount == pytest.approx(5_988.0)
+    assert buy.net_amount == pytest.approx(6_012.0)
+
+
+def test_min_trade_amount_skips_small_orders_with_reason():
+    snap = make_snapshot({"a": 0.56, "b": 0.44}, {"a": 0.5, "b": 0.5})
+    trades, fired = propose_trades(snap, 5.0, 100.0, min_trade_amount=10_000.0)
+    assert trades == []
+    assert sum("Rmin:" in x for x in fired) == 2
+
+
+def test_class_without_positions_is_reported_not_silent():
+    positions = pd.DataFrame({
+        "ticker": ["A"], "quantity": [1.0], "asset_class": ["a"],
+        "currency": ["PLN"], "price": [100_000.0], "fx_rate": [1.0],
+        "value_base": [100_000.0],
+    })
+    snap = Snapshot(positions=positions, total_value=100_000.0,
+                    allocation={"a": 1.0, "b": 0.0},
+                    drift_pp={"a": 10.0, "b": -10.0},
+                    benchmark_value=0.0, benchmark_values={"bench": 0.0},
+                    targets={"a": 0.9, "b": 0.1})
+    trades, fired = propose_trades(snap, 5.0, 100.0)
+    assert any("BRAK POZYCJI" in x for x in fired)
+    assert len(trades) == 1  # tylko sprzedaż z klasy a; klasy b nie da się kupić
+
+
+def test_lot_size_rounds_units_down():
+    snap = make_snapshot({"a": 0.56, "b": 0.44}, {"a": 0.5, "b": 0.5})
+    trades, _ = propose_trades(snap, 5.0, 100.0,
+                               lot_sizes={"a": 4_000.0, "b": 4_000.0})
+    assert len(trades) == 2
+    assert all(t.units % 4_000.0 == 0 for t in trades)
+    assert all(t.amount == pytest.approx(4_000.0) for t in trades)

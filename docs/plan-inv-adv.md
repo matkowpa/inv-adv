@@ -96,7 +96,7 @@ decyzją właściciela (profil 100% ryzykowny).
 5. Regulacje przy skalowaniu (MiFID/KNF) → F3 zamrożona do analizy prawnej.
 6. Próg porażki projektu — zdefiniowany (decyzja D1): Sharpe < Sharpe S&P 500 po 12 mies. paper tradingu → koniec projektu.
 
-## 7. Podjęte decyzje właściciela (D1–D4)
+## 7. Podjęte decyzje właściciela (D1–D6)
 
 > Pełne uzasadnienia i przebieg podejmowania: [decyzje.md](decyzje.md).
 
@@ -107,5 +107,6 @@ decyzją właściciela (profil 100% ryzykowny).
 | D3 | Obszar dyskrecjonalny | NIE — system zawsze wykonuje regułę; wyjątek tylko ręcznie, z wpisem w logu | M2 bez furtki dyskrecjonalnej |
 | D4 | Źródło danych | Źródła publiczne (Stooq, Yahoo i inne) lub API brokera (np. XTB) | §4: dane rynkowe |
 | D5 | Targety alokacji (krypto) | Krypto = aktualna alokacja BITC.AS (~4,7%); nadwyżka 5,3 p.p. → equity_us (60,3%); R1 nie odpala | `config.yaml` targets; brak propozycji BUY krypto w protokołach |
+| D6 | Los warstwy LLM (M4) po G1 | **opcja (b)** — kalibracja progu i re-test G1; M4 pozostaje zawieszony do wyniku re-testu | F2: kalibracja + re-test; brak wdrożenia M4 przed gate'em |
 
 Założenie do D2: wszystkie trzy liczby w tej samej walucie.
