@@ -78,6 +78,7 @@ pip install -r requirements.txt   # Python 3.12
 - [docs/g1-wynik.md](docs/g1-wynik.md) — wynik gate'a G1 (test komitetu agentów): FAIL, M4 zawieszony, decyzja D6
 - [docs/what-if-targets.md](docs/what-if-targets.md) — analiza what-if wariantów targetów (wsparcie decyzji D5)
 - [docs/metodologia.md](docs/metodologia.md) — logika i metodologia systemu krok po kroku
+- [docs/monitoring-repozytoriow.md](docs/monitoring-repozytoriow.md) — schemat monitoringu jobów i repozytoriów (dashboard, alerty, publikacja)
 - [docs/decyzje.md](docs/decyzje.md) — rejestr decyzji właściciela
 - Wyjściowy opis pomysłu: [TODOs.txt](TODOs.txt)
 
